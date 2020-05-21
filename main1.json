@@ -1,0 +1,15 @@
+{"Stitches3D": [{"upper": ["hexagon1.json"], "lower":["hexagon2.json"]},
+{"upper": ["hexagon2.json"], "lower":["hexagon3.json"]},
+{"upper": ["hexagon3.json"], "lower":["hexagon4.json"]},
+{"upper": ["hexagon4.json"], "lower":["hexagon5.json"]},
+{"upper": ["hexagon5.json"], "lower":["hexagon6.json"]},
+{"upper": ["hexagon6.json"], "lower":["hexagon7.json"]},
+{"upper": ["hexagon7.json"], "lower":["hexagon8.json"]},
+{"upper": ["hexagon8.json"], "lower":["hexagon9.json"]},
+{"upper": ["hexagon9.json"], "lower":["hexagon10.json"]}
+], 
+"FileDir": "/home/hmynssen/Desktop/Stitcher/json", 
+"OutputDir": "/home/hmynssen/Desktop/Stitcher/mesh", 
+"DisplayConsoleStats": "False", 
+"SaveFigureAutomatic": "False", 
+"MeshObjOutput": true}
