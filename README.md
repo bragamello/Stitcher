@@ -38,7 +38,7 @@ Reconstruction of 3D Surfaces
               "MeshObjOutput": BOOLEAN}
 
   On this example, the first plane contains only one island which is only connected to the island 'two' in the second plane. The second plane however has 3 islands and all of them will be connected to islands five and six in the third plane.
-  
+
 # The Output
 
-  The program outputs the number of inputed files minus 1. Each output file contaning Verticies and Edges organized in a format that is readable, for example, in [Meshlab](http://www.meshlab.net).
+  The program outputs the number of inputed files minus 1. Each output file containing Vertices and Edges organized in a format that is readable, for example, in [Meshlab](http://www.meshlab.net).
