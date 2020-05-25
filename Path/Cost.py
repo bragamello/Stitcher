@@ -8,15 +8,18 @@ def Distance(P1, P2, Thickness):
 	## - used to select the first connection
 	return  math.sqrt((P1.x - P2.x) ** 2 + (P1.y - P2.y) ** 2 + Thickness ** 2)
 
-def DistanceMatrix(Upper,Lower):
+def DistanceMatrix(Upper,Lower,Thickness):
 	## Upper stands for the surface on top and Lower for the one in the bottom
-	M = len(Upper);
-	N = len(Lower);
+	M = len(Upper)
+	N = len(Lower)
 
 	distMatrix = np.zeros((M-1,N-1))
+	##Redcuced size beacause there are N-1 connections between N points
+
+
 	for m in range(0,M-1):
 		for n in range(0,N-1):
-			distMatrix[m,n] = Distance(Upper[m],Lower[n],1) ##Wacht out!!
+			distMatrix[m,n] = Distance(Upper[m],Lower[n],Thickness) ##Wacht out!!
 
 	## finding all min values contained inthe matrix
 	## There's usually only one, but the value might be repeated somewhere
@@ -27,7 +30,6 @@ def DistanceMatrix(Upper,Lower):
 	##finalMinCord will be the value used to rearange the matrix
 	##considering the first element to be the one with maximum resembalnce
 	##i.e., the one with minimal distance from the point above
-	#print(distMatrix[finalMinCord[0],finalMinCord[1]])
 
 	return finalMinCord
 
@@ -61,10 +63,6 @@ def FindPath(FinalMatrix, M, N):
     for i in range(1,M):
         for j in range(1,N):
             best = min(MinCost[i-1][j],MinCost[i][j-1])
-##            if random.random()<=0.5:
-##                    best = MinCost[i-1][j]
-##            else:
-##                    best = MinCost[i][j-1]
             MinCost[i][j] = best + FinalMatrix[i][j]
             if MinCost[i][j]<=0:
                     print("problem")

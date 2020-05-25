@@ -14,6 +14,7 @@ def preProc(*Names, DispConsole = False, resolution = 0.8):
         ## Input .json file. Brain slices
         I1x,I1y,I1z = OpenROI.ROIRead(File1Name)
         I2x,I2y,I2z = OpenROI.ROIRead(File1Name2)
+        Thickness = I1z[0] - I2z[0]
 
         ## The orientation of the curve must be the same on both
         ## contours. The FixOrientation function corrects the orientation
@@ -34,7 +35,7 @@ def preProc(*Names, DispConsole = False, resolution = 0.8):
         	Island2x,Island2y,Island2z = DistanceCheck.FixPoints(I2x,I2y,I2z,resolution)
 
 
-        Slice = Curve.IslandsEnsemble(Island1x, Island1y, Island2x, Island2y)
+        Slice = Curve.IslandsEnsemble(Island1x, Island1y, Island2x, Island2y, Thickness)
         M = len(Slice)
         Slicex = [0]*M
         Slicey = [0]*M
@@ -56,7 +57,7 @@ def preProc(*Names, DispConsole = False, resolution = 0.8):
                 	Island2x,Island2y,Island2z = DistanceCheck.FixPoints(I2z,I2x,Iy2,resolution)
                 if Orientation == 2:
                 	Island2x,Island2y,Island2z = DistanceCheck.FixPoints(I2x,I2y,I2z,resolution)
-                Slice = Curve.IslandsEnsemble(Slicex, Slicey, Island2x, Island2y)
+                Slice = Curve.IslandsEnsemble(Slicex, Slicey, Island2x, Island2y, Thickness)
                 M = len(Slice)
                 Slicex = [0]*M
                 Slicey = [0]*M
