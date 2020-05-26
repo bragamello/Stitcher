@@ -4,6 +4,7 @@ import Proc.OpenROI as OpenROI
 import Geometry.Curve as Curve
 import Geometry.DistanceCheck as DistanceCheck
 import Geometry.Islands as Islands
+import Geometry.Intersection as Intersection
 
 def preProc(*Names, DispConsole = False, resolution = 0.8):
 
@@ -40,7 +41,7 @@ def preProc(*Names, DispConsole = False, resolution = 0.8):
         Slicex = [0]*M
         Slicey = [0]*M
         Slicez = Island1z
-        Slicez.append(Island2z)
+        Slicez += Island2z
         for i in range(0,M):
         	Slicex[i] = Slice[i].x;
         	Slicey[i] = Slice[i].y;
@@ -61,10 +62,10 @@ def preProc(*Names, DispConsole = False, resolution = 0.8):
                 M = len(Slice)
                 Slicex = [0]*M
                 Slicey = [0]*M
-                Slicez.append(Island2z)
+                Slicez += Island2z
                 for i in range(0,M):
-                	Slicex[i] = Slice[i].x;
-                	Slicey[i] = Slice[i].y;
+                	Slicex[i] = Slice[i].x
+                	Slicey[i] = Slice[i].y
                 j += 1
 
     else:
@@ -109,6 +110,6 @@ def preProc(*Names, DispConsole = False, resolution = 0.8):
         N = len(Slicex)
         Slice = [PointElement.Point]*N
         for i in range(0,N):
-        	Slice[i] = PointElement.Point(Island1x[i],Island1y[i]);
+        	Slice[i] = PointElement.Point(Island1x[i],Island1y[i])
 
     return Slicex,Slicey,Slicez, Slice, Orientation
