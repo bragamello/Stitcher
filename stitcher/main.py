@@ -2,7 +2,7 @@ import json
 import numpy as np
 import os
 import reconstruction as rct
-import file_reader.ROIRead as ROIRead
+import file_reader.roiread as roiread
 
 '''
     A colections of points Point() are correlated in a manner that creates
@@ -29,7 +29,7 @@ for block in Data["Stitches3D"]:
     for section in block:
         for file in block[section]:
             print(file)
-            arq = ROIRead(FileDir+"/"+file)
+            arq = roiread(FileDir+"/"+file)
             I = rct.Perimeter(arq)
             I.remove_overlap()
             I.fix_distance()

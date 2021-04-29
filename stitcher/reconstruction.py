@@ -469,7 +469,16 @@ class Surface():
             def diagonal_clip(Polygon, GSP, area):
                 def check_inside(Polygon, GSP, p_i, p_j, area) -> bool:
                     '''
-                        Is it inside or outside the polygon?
+                        We first check if the direction change in the diagonal
+                        is smaller then the one made by going from the current
+                        point to the next one. For example, consider the case:
+                            1) from p_k going to p_k+1 we make a turn of 60o
+                            2) from p_k to p_j (creating a diagonal) we make a
+                            turn of 45 deegrees, then we are inside the polygon
+                        If we are inside the polygon, then we need to check if
+                        the diagonal intersects any order line segment in the
+                        perimeter. If that is not the case, then we may say that
+                        the diagonal is trully inside the polygon.
                     '''
                     displacement1 = GSP[p_i][0] - GSP[p_i-1][0]
                     if p_i+1 == GSP.shape[0]:
@@ -477,6 +486,7 @@ class Surface():
                     else:
                         displacement2 = (GSP[p_i+1][0] - GSP[p_i][0])
                     diagonal_segment = (GSP[p_j][0] - GSP[p_i][0])
+
                     ## checking if they turn inside or not
                     sign_angle_i = displacement1**displacement2
                     if sign_angle_i.mod()>0:
@@ -499,29 +509,31 @@ class Surface():
                             return False
                         inside2 = False
 
+
                     if inside1 and not inside2:
                         return False
 
+                    '''
+                     Remember that all the angles calculated range from
+                    0 to pi. So we need the inside1 and inside2 to teel
+                    whether or not its trully ranging from 0 to pi or if it
+                    should be from pi to 2pi
+                    '''
                     angle_i = displacement2.dot(displacement1)
                     angle_i = angle_i/(displacement2.mod()*displacement1.mod())
-                    if angle_i>1:
-                        print(angle_i)
                     angle_i = np.pi - np.arccos(angle_i)
 
                     angle_j = diagonal_segment.dot(displacement1)
                     angle_j = angle_j/(diagonal_segment.mod()*displacement1.mod())
-                    if angle_j>1:
-                        print(angle_j)
                     angle_j = np.pi - np.arccos(angle_j)
+
                     if inside2 and inside1:
                         if angle_j>=angle_i:
-                            #print("int big angle", angle_j , angle_i)
                             return False
                     if not inside2 and not inside1:
                         if angle_i>=angle_j:
-                            #print("ext big angle")
-                            #print("origin vec: ",GSP[p_i-2][0],"\n",GSP[p_i-1][0],"\n",GSP[p_i][0],"\n",GSP[p_j][0])
                             return False
+
                     for index in range(Polygon.shape[0]-1):
                         if Perimeter().find_intersection(
                             Polygon[index][0],
@@ -529,44 +541,30 @@ class Surface():
                             GSP[p_i][0],
                             GSP[p_j][0],
                             False):
-                            #print("leaving cuz of intersect")
                             return False
                     return True
                 half = int((GSP.shape[0]-1)/2)+1
                 for j in range(2,half):
                     for i in range(half):
-                        #print("GSP: ",i)
                         p_i = i
                         p_diag = p_i+j
                         if p_diag == GSP.shape[0]:
                             p_diag = 0
                         if check_inside(Polygon, GSP, p_i, p_diag, area):
-                            #print("Check inside: ", p_i, p_diag,)
-                            #print("ear point: ", GSP[p_i][0])
-                            #print("rest: ", GSP)
                             if p_diag>p_i:
                                 gsp1 = GSP[p_i:p_diag+1]
                                 sub_deletion = [[k] for k in range(p_i+1,p_diag)]
                                 gsp2 = np.delete(GSP, sub_deletion, axis=0)
                             else:
-                                #print(p_diag, p_i)
                                 gsp1 = GSP[p_diag:p_i+1]
                                 sub_deletion = [[k] for k in range(p_diag+1,p_i+1)]
                                 gsp2 = np.delete(GSP, sub_deletion, axis=0)
-                            '''print(p_diag, p_i)
-                            print(sub_deletion)
-                            print(gsp1)
-                            print(gsp2)
-                            print(GSP)'''
-
                             return gsp1, gsp2
-                #print(GSP)
                 raise Exception("Failed to find diagonal in subpolygon\nCheck CloseSurface method")
             def ear(GSP):
                 if GSP.shape[0] <= 4:
                     return True
                 return False
-
             if ear(GSP):
                 if GSP.shape[0] == 4:
                     p0 = GSP[0][1]
@@ -590,13 +588,11 @@ class Surface():
                             " " + str (p2+shift) + "\n"
 
                 if GSP.shape[0] < 3:
-                    print(GSP)
                     raise Exception("GSP subdivision failed")
                 return s
             else:
                 edges = ''
                 gsp1, gsp2 = diagonal_clip(Polygon, GSP, area)
-                #print(gsp1,"\n",gsp2)
                 e1 = find_ear(Polygon, gsp1, shift, area)
                 e2 = find_ear(Polygon, gsp2, shift, area)
                 edges += e1 + e2
