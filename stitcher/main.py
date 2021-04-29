@@ -4,6 +4,15 @@ import os
 import reconstruction as rct
 import file_reader.ROIRead as ROIRead
 
+'''
+    A colections of points Point() are correlated in a manner that creates
+    a perimeter Perimeter(). Every perimeter should be nice, i.e.:
+        1) Not self-intersecting;
+        2) No overlaping points;
+        3) Have a prefered orientation
+    If we can garantee this properties, than we proceed to stitch a colection
+    of perimeters in a surface Surface().
+'''
 with open('main.json', 'r') as settings:
     data = settings.read()
 Data = json.loads(data)
@@ -34,8 +43,3 @@ S.build_surface()
 with open("inter_RH_PIAL_2.obj", "w") as out_file:
     out_file.write(S.surfaceV)
     out_file.write(S.surfaceE)
-if 0:
-    with open("main_RH_PIAL_.json", "w") as file:
-        for i in range(1,40):
-            test = json.dumps(str(i)+"_rh_pial.json")
-            file.write(test+",")
