@@ -443,14 +443,14 @@ class Surface():
             self.border_intersection = False
 
         self.surfaceV +=  self.__Vertices(self.slices[n+1].points)
-        self.surfaceE += self.__CloseSurface(self.slices.shape[0]-1, total_shift)
-        self.surfaceE += self.__CloseSurface(0) ##intial slice closure
+        #self.surfaceE += self.__CloseSurface(self.slices.shape[0]-1, total_shift)
+        #self.surfaceE += self.__CloseSurface(0) ##intial slice closure
         self.out_surface = True
     def super_resolution(self):
         self.super_surface
 
     ## Not meant for end-user
-    def __CloseSurface(self, closing_index, shift = 0):
+    def __CloseSurface(self, closing_index, shift=0):
         '''
             Slicing an ear using prune-and-search
 
@@ -521,12 +521,23 @@ class Surface():
                     '''
                     angle_i = displacement2.dot(displacement1)
                     angle_i = angle_i/(displacement2.mod()*displacement1.mod())
+                    if angle_i>1:
+                        print(angle_i)
+                        angle_i = 1
+                    if angle_i<-1:
+                        print(angle_i)
+                        angle_i = -1
                     angle_i = np.pi - np.arccos(angle_i)
 
                     angle_j = diagonal_segment.dot(displacement1)
                     angle_j = angle_j/(diagonal_segment.mod()*displacement1.mod())
+                    if angle_j>1:
+                        print(angle_j)
+                        angle_j = 1
+                    if angle_j<-1:
+                        print(angle_j)
+                        angle_j = -1
                     angle_j = np.pi - np.arccos(angle_j)
-
                     if inside2 and inside1:
                         if angle_j>=angle_i:
                             return False
@@ -543,9 +554,9 @@ class Surface():
                             False):
                             return False
                     return True
-                half = int((GSP.shape[0]-1)/2)+1
+                half = int((GSP.shape[0]-1)/2)
                 for j in range(2,half):
-                    for i in range(half):
+                    for i in range(GSP.shape[0]-j):
                         p_i = i
                         p_diag = p_i+j
                         if p_diag == GSP.shape[0]:

@@ -1,3 +1,5 @@
+import json
+import numpy as np
 def roiread(name):
 
     with open(name, 'r') as roi:

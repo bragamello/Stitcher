@@ -2,14 +2,14 @@ import json
 import numpy as np
 import os
 import reconstruction as rct
-import file_reader.roiread as roiread
+from file_reader import roiread
 
 '''
     A colections of points Point() are correlated in a manner that creates
     a perimeter Perimeter(). Every perimeter should be nice, i.e.:
         1) Not self-intersecting;
         2) No overlaping points;
-        3) Have a prefered orientation
+        3) Have a prefered orientation.
     If we can garantee this properties, than we proceed to stitch a colection
     of perimeters in a surface Surface().
 '''
