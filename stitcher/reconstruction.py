@@ -383,7 +383,23 @@ class Surface():
         for n in range(self.slices.shape[0]-1):
             print(n)
             dist_matrix =  self.__CostMatrix(self.slices[n],self.slices[n+1])
-            bad_conect = []
+            '''
+
+                After reordering the both sequences of points, we need
+            to a way to conect all in between points that represent a
+            surface that:
+                1) is not self intersecting
+                2) has the smallest possible area
+                3) is closed
+            -~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-
+                If we find a point that all of its connections create
+            intersections, than we must never use this point in our final
+            mesh. So we list all this points per stitched surface and exclude
+            them from our path find algorithm by setting its value to
+            infinity.
+            '''
+            bad_connect = []
+
             while not self.border_intersection: ##After finding a path with o intersections
                 ## finding all min values contained inthe matrix
                 ##there's usually only one, but the value might
@@ -399,14 +415,13 @@ class Surface():
                 reordered_upper =  self.__Reordering(
                     self.slices[n],
                     final_min_cord[0])
-
                 reordered_lower =  self.__Reordering(
                     self.slices[n+1],
                     final_min_cord[1])
 
                 cost_matrix =  self.__CostMatrix(reordered_upper,reordered_lower)
 
-                for bad in bad_conect:
+                for bad in bad_connect:
                     bad1= 0
                     bad2= 0
                     if bad[0]>=f0:
@@ -419,21 +434,14 @@ class Surface():
                         bad2 = bad[1]++(self.slices[n+1].points.shape[0]-f1)
                     cost_matrix[bad1,bad2] = np.inf
 
-                '''
-                    After reordering the both sequences of points, we need
-                to a way to conect all in between points that represent a
-                surface that:
-                    1) is not self intersecting
-                    2) has the smallest possible area
-                    3) is closed
-                '''
                 mincost,the_path,wrong = self.__FindPath(
                     cost_matrix,
                     self.slices[n].points.shape[0],
                     self.slices[n+1].points.shape[0],
                     reordered_upper,
                     reordered_lower)
-                #print(wrong,bad_conect,f0,f1,self.slices[n].points.shape[0],self.slices[n+1].points.shape[0])
+
+                ##fixing relative order to absolute/initial order
                 if not isinstance(wrong, int):
                     if wrong[0]+f0 < self.slices[n].points.shape[0]:
                         wrong[0] += f0
@@ -443,10 +451,10 @@ class Surface():
                         wrong[1] += f1
                     else:
                         wrong[1] = f1+wrong[1]-self.slices[n+1].points.shape[0]
-                    if [wrong[0],wrong[1]] in bad_conect:
+                    if [wrong[0],wrong[1]] in bad_connect:
                         dist_matrix[f0,f1] = np.inf
                     else:
-                        bad_conect.append([wrong[0],wrong[1]])
+                        bad_connect.append([wrong[0],wrong[1]])
                 else:
                     dist_matrix[f0,f1] = np.inf
 
@@ -470,8 +478,8 @@ class Surface():
             self.border_intersection = False
 
         self.surfaceV +=  self.__Vertices(self.slices[n+1].points)
-        #self.surfaceE += self.__CloseSurface(self.slices.shape[0]-1, total_shift)
-        #self.surfaceE += self.__CloseSurface(0) ##intial slice closure
+        self.surfaceE += self.__CloseSurface(self.slices.shape[0]-1, total_shift)
+        self.surfaceE += self.__CloseSurface(0) ##intial slice closure
         self.out_surface = True
     def super_resolution(self):
         self.super_surface
@@ -758,6 +766,7 @@ class Surface():
                                     reordered_upper,
                                     reordered_lower)
                         if check2[1]:
+                            ##[m,n] -> Bad point that always create intersection
                             return 0,0,[m,n]
                         else:
 
