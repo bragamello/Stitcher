@@ -383,7 +383,7 @@ class Surface():
         for n in range(self.slices.shape[0]-1):
             print(n)
             dist_matrix =  self.__CostMatrix(self.slices[n],self.slices[n+1])
-
+            bad_conect = []
             while not self.border_intersection: ##After finding a path with o intersections
                 ## finding all min values contained inthe matrix
                 ##there's usually only one, but the value might
@@ -406,6 +406,19 @@ class Surface():
 
                 cost_matrix =  self.__CostMatrix(reordered_upper,reordered_lower)
 
+                for bad in bad_conect:
+                    bad1= 0
+                    bad2= 0
+                    if bad[0]>=f0:
+                        bad1 = bad[0]-f0
+                    else:
+                        bad1 = bad[0]+(self.slices[n].points.shape[0]-f0)
+                    if bad[1]>=f1:
+                        bad2 = bad[1]-f1
+                    else:
+                        bad2 = bad[1]++(self.slices[n+1].points.shape[0]-f1)
+                    cost_matrix[bad1,bad2] = np.inf
+
                 '''
                     After reordering the both sequences of points, we need
                 to a way to conect all in between points that represent a
@@ -414,14 +427,28 @@ class Surface():
                     2) has the smallest possible area
                     3) is closed
                 '''
-
-                min_cost, the_path =  self.__FindPath(
+                mincost,the_path,wrong = self.__FindPath(
                     cost_matrix,
                     self.slices[n].points.shape[0],
                     self.slices[n+1].points.shape[0],
                     reordered_upper,
                     reordered_lower)
-                dist_matrix[f0,f1] = np.inf
+                #print(wrong,bad_conect,f0,f1,self.slices[n].points.shape[0],self.slices[n+1].points.shape[0])
+                if not isinstance(wrong, int):
+                    if wrong[0]+f0 < self.slices[n].points.shape[0]:
+                        wrong[0] += f0
+                    else:
+                        wrong[0] = f0+wrong[0]-self.slices[n].points.shape[0]
+                    if wrong[1]+f1 < self.slices[n+1].points.shape[0]:
+                        wrong[1] += f1
+                    else:
+                        wrong[1] = f1+wrong[1]-self.slices[n+1].points.shape[0]
+                    if [wrong[0],wrong[1]] in bad_conect:
+                        dist_matrix[f0,f1] = np.inf
+                    else:
+                        bad_conect.append([wrong[0],wrong[1]])
+                else:
+                    dist_matrix[f0,f1] = np.inf
 
             ## The path is calculated based on the reordered points,
             ##so we should invert the transformation so that we have
@@ -629,7 +656,7 @@ class Surface():
                 cost_matrix[m,n] = (reordered_upper.points[m] - reordered_lower.points[n]).mod()
 
         return cost_matrix
-    def __FindPath(self, final_matrix, M, N, reordered_upper, reordered_lower) -> np.ndarray:
+    def __FindPath(self, final_matrix, M, N, reordered_upper, reordered_lower):
         def surface_intersection(the_path, path_limit, next, upper, reordered_upper, reordered_lower) -> bool:
             def line_triangle_intersection(q1, q2, p1, p2, p3):
                 ## stackoverflow.com/questions/42740765/intersection-between-line-and-triangle-in-3d
@@ -648,7 +675,6 @@ class Surface():
                         supp_arr = [i,j,i,j+1]
                         return True
                 return False
-
             if path_limit < 3:
                 return [-1,-1], False
 
@@ -658,8 +684,10 @@ class Surface():
                 search_limit = 0 #path_limit - self._intersection_range
             else:
                 search_limit = 0
-
-            p_index = the_path[path_limit-1]
+            if path_limit < the_path.shape[0]:
+                p_index = the_path[path_limit]
+            else:
+                return [-1,-1], False
 
             if upper:
                 p1 = reordered_upper.points[next[0]]
@@ -669,8 +697,7 @@ class Surface():
                 p1 = reordered_lower.points[next[1]]
                 p2 = reordered_upper.points[next[0]]
                 p3 = reordered_upper.points[p_index[0]]
-
-            for i in the_path[search_limit:path_limit-1]:
+            for i in the_path[search_limit:path_limit+1]:
                 a0 = int(i[0])
                 b0 = int(i[1])
                 q1 = reordered_upper.points[a0]
@@ -711,6 +738,7 @@ class Surface():
         the_path[M+N-3] = [M-1,N-1]
         m = M-1
         n = N-1
+        the_path = np.insert(the_path, 0, [[M-1,N-1]], axis=0)
 
         for i in range(M+N-3,-1,-1):
             index = M + N - i - 3
@@ -730,14 +758,15 @@ class Surface():
                                     reordered_upper,
                                     reordered_lower)
                         if check2[1]:
-                            return 0,0
+                            return 0,0,[m,n]
                         else:
+
                             n = n - 1
                     else:
-                        if not min_cost[m][n-1] == np.inf:
+                        if not min_cost[m-1][n] == np.inf:
                             m = m - 1
                         else:
-                            return 0,0
+                            return 0,0,[m,n]
                 else:
                     check = surface_intersection(the_path,
                                 index,
@@ -753,16 +782,16 @@ class Surface():
                                     reordered_upper,
                                     reordered_lower)
                         if check2[1]:
-                            return 0,0
+                            return 0,0,[m,n]
                         else:
                             m = m - 1
                             counter = 0
                     else:
-                        if not min_cost[m-1][n] == np.inf:
+                        if not min_cost[m][n-1] == np.inf:
                             n = n - 1
                             counter = 0
                         else:
-                            return 0,0
+                            return 0,0,[m,n]
             else:
                 if m<=0:
                     check = surface_intersection(the_path,
@@ -772,7 +801,7 @@ class Surface():
                                 reordered_upper,
                                 reordered_lower)
                     if check[1]:
-                        return 0,0
+                        return 0,0,[m,n]
                     n = n - 1
                 else:
                     check = surface_intersection(the_path,
@@ -782,10 +811,10 @@ class Surface():
                                 reordered_upper,
                                 reordered_lower)
                     if check[1]:
-                        return 0,0
+                        return 0,0,[m,n]
                     m = m - 1
 
-            the_path[index] = [m,n]
+            the_path[index+1] = [m,n] ##+1 because of the insert before the loop
 
             if [m,n] == [0,N-1]:
                 var1 = True
@@ -794,27 +823,8 @@ class Surface():
 
         ##var1 and var2 are used to add a single point in order to make the
         ##the graph a closed cicle
-        the_path = np.insert(the_path, 0, [[M-1,N-1]], axis=0)
 
         if var1:
-
-            the_path_last1 = np.append(the_path, [[M-1,0]], axis=0)
-            min_cost[min_cost.shape[0]-1,min_cost.shape[1]-1] += ofinal_matrix[M-1][0]
-
-            check = surface_intersection(the_path_last1,
-                        the_path.shape[0],
-                        [M-1,0],
-                        False,
-                        reordered_upper,
-                        reordered_lower)
-            if check[1]:
-                ### remove later
-                print("border0.1")
-                #####
-                return 0,0
-
-            the_path_last2 = np.insert(the_path, 0, [[M-1,0]], axis=0)
-
             check = surface_intersection(the_path,
                         the_path.shape[0],
                         [M-1,0],
@@ -825,27 +835,56 @@ class Surface():
                 ### remove later
                 print("border0.1")
                 #####
-                return 0,0
+                return 0,0, [m,n]
 
             the_path = np.append(the_path, [[M-1,0]], axis=0)
             self.border_intersection = True
-            return [min_cost,the_path]
+            return [min_cost,the_path,0]
         if var2:
             the_path = np.append(the_path, [[0,N-1]], axis=0)
             min_cost[min_cost.shape[0]-1,min_cost.shape[1]-1] += ofinal_matrix[0][N-1]
             self.border_intersection = True
-            return [min_cost,np.array(the_path)]
+            return [min_cost,the_path,0]
 
         if ofinal_matrix[M-1][0]<ofinal_matrix[0][N-1]:
+            check = surface_intersection(the_path,
+                        the_path.shape[0],
+                        [M-1,0],
+                        True,
+                        reordered_upper,
+                        reordered_lower)
+            if check[1]:
+                ### remove later
+                print("border0.1")
+                #####
+                return 0,0,[m,n]
             the_path = np.append(the_path, [[M-1,0]], axis=0)
             min_cost[min_cost.shape[0]-1,min_cost.shape[1]-1] += ofinal_matrix[M-1][0]
             self.border_intersection = True
-            return [min_cost,np.array(the_path)]
+            return [min_cost,the_path,0]
         else:
+            #print(M,N, the_path.shape)
+            check = surface_intersection(the_path,
+                        the_path.shape[0],
+                        [0,N-1],
+                        False,
+                        reordered_upper,
+                        reordered_lower)
+            check2 = surface_intersection(the_path[::-1],
+                        the_path.shape[0],
+                        [0,N-1],
+                        True,
+                        reordered_upper,
+                        reordered_lower)
+            if check[1] or check2[1]:
+                ### remove later
+                print("border0.1")
+                #####
+                return 0,0, [m,n]
             the_path = np.append(the_path, [[0,N-1]], axis=0)
             min_cost[min_cost.shape[0]-1,min_cost.shape[1]-1] += ofinal_matrix[0][N-1]
             self.border_intersection = True
-            return [min_cost,np.array(the_path)]
+            return [min_cost,the_path,0]
     def __Reordering(self, contour, final_min_cord : int):
         M = contour.points.shape[0]
         reordered = [Point(0,0,0)]*M
