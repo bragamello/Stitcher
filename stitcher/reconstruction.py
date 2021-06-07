@@ -274,7 +274,7 @@ class Perimeter():
             Loops += 1
             if not found:
                 Check = False
-            if Loops > 10:
+            if Loops > 20:
                 Check = False
 
     def __str__(self):
@@ -589,7 +589,7 @@ class Surface():
                             False):
                             return False
                     return True
-                half = int((GSP.shape[0]-1)/2)
+                half = int((GSP.shape[0]-1)/2)+1
                 for j in range(2,half):
                     for i in range(GSP.shape[0]-j):
                         p_i = i
