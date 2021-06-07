@@ -32,14 +32,15 @@ for block in Data["Stitches3D"]:
             arq = roiread(FileDir+"/"+file)
             I = rct.Perimeter(arq)
             I.remove_overlap()
-            I.fix_distance()
+            I.remove_overlap()
             I.fix_intersection()
+            I.fix_distance()
             I.c_clockwise()
             S.add_island(I)
 
 print("\nBuilding surface")
 S.build_surface()
 
-with open("inter_RH_PIAL_2.obj", "w") as out_file:
+with open("inter_RH_PIAL_o.obj", "w") as out_file:
     out_file.write(S.surfaceV)
     out_file.write(S.surfaceE)
