@@ -1,6 +1,10 @@
 import json
 import numpy as np
-def roiread(name):
+def roiread(name, filetype = "OSIRIXJSON"):
+    '''
+        It may be needed to read files from imageJ,
+    Osirix and other programs. 
+    '''
 
     with open(name, 'r') as roi:
         data = roi.read()
