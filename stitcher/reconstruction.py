@@ -90,7 +90,7 @@ class Perimeter():
         final
 
         return
-    def fix_distance(self):
+    def fix_distance(self, subdivision = 3):
         ## Creates new points between points that are too
         ##far apart from each other
         counter = 0
@@ -102,7 +102,7 @@ class Perimeter():
         d0 = np.sum(distance)/(self.points.shape[0])
         aux = 0
         for i in range(self.points.shape[0]-1):
-            if distance[i] >= (3*d0):
+            if distance[i] >= (d0*subdivision):
                 factor = int(distance[i]/d0)
                 points_list = np.array([Point(0,0,0)]*(factor-1))
                 for j in range(1, factor):
@@ -276,6 +276,33 @@ class Perimeter():
                 Check = False
             if Loops > 20:
                 Check = False
+    def islands_ensemble(self, other):
+        M = self.points.shape[0]-1
+        N = other.points.shape[0]-1
+        small_dist = np.inf
+        for i in range(M):
+            p_i = self.points[i]
+            for j in range(N):
+                p_j = other.points[j]
+                if (p_i-p_j).mod()<small_dist:
+                    small_dist = (p_i-p_j).mod()
+                    best_p_i = i
+                    best_p_j = j
+        vari = M+N
+        merged = np.array([Point(0,0,0)]*(vari))
+        delta = 0
+        for i in range(M):
+            if i==best_p_i+1:
+                for j in range(N):
+                    if best_p_j+j<N:
+                        merged[i+j] = other.points[best_p_j+j]
+                    else:
+                        merged[i+j] = other.points[j-(N-best_p_j)]
+                delta = N-1
+            else:
+                merged[i+delta] = self.points[i]
+        merged[vari-1] = self.points[0]
+        self.points = merged
 
     def __str__(self):
         return "{L}\nwith shape = {S}".format(
@@ -407,10 +434,12 @@ class Surface():
                 closest_point_dist = np.amin(dist_matrix)
                 allMin = np.where(dist_matrix == closest_point_dist)
                 list_cordinates = list(zip(allMin[0], allMin[1]))
+
                 final_min_cord = list_cordinates[0]
                 f0 = final_min_cord[0]
                 f1 = final_min_cord[1]
-
+                #if len(bad_connect) > 0:
+                    #print(bad_connect,f0,f1)
                 ## Re-order the points: put the first connection at (0,0)
                 reordered_upper =  self.__Reordering(
                     self.slices[n],
@@ -420,18 +449,17 @@ class Surface():
                     final_min_cord[1])
 
                 cost_matrix =  self.__CostMatrix(reordered_upper,reordered_lower)
-
+                #print("\n dist_m:",dist_matrix.shape,"\n cost_m:",cost_matrix.shape)
+                #print("\n n shape:",self.slices[n].points.shape,"\n n+1:",self.slices[n+1].points.shape)
                 for bad in bad_connect:
-                    bad1= 0
-                    bad2= 0
                     if bad[0]>=f0:
                         bad1 = bad[0]-f0
                     else:
-                        bad1 = bad[0]+(self.slices[n].points.shape[0]-f0)
+                        bad1 = bad[0]+(self.slices[n].points.shape[0]-f0-1)
                     if bad[1]>=f1:
                         bad2 = bad[1]-f1
                     else:
-                        bad2 = bad[1]++(self.slices[n+1].points.shape[0]-f1)
+                        bad2 = bad[1]+(self.slices[n+1].points.shape[0]-f1-1)
                     cost_matrix[bad1,bad2] = np.inf
 
                 mincost,the_path,wrong = self.__FindPath(
@@ -443,14 +471,20 @@ class Surface():
 
                 ##fixing relative order to absolute/initial order
                 if not isinstance(wrong, int):
-                    if wrong[0]+f0 < self.slices[n].points.shape[0]:
+                    if wrong[0]+f0 <= self.slices[n].points.shape[0]-2:
                         wrong[0] += f0
+                        #print('1')
                     else:
-                        wrong[0] = f0+wrong[0]-self.slices[n].points.shape[0]
-                    if wrong[1]+f1 < self.slices[n+1].points.shape[0]:
+                        wrong[0] += f0-self.slices[n].points.shape[0]-2
+                        #print('2',wrong[0])
+
+                    if wrong[1]+f1 <= self.slices[n+1].points.shape[0]-2:
                         wrong[1] += f1
+                        #print('3')
                     else:
-                        wrong[1] = f1+wrong[1]-self.slices[n+1].points.shape[0]
+                        wrong[1] += f1-self.slices[n+1].points.shape[0]-2
+                        #print('4',wrong[1])
+                    #print("..")
                     if [wrong[0],wrong[1]] in bad_connect:
                         dist_matrix[f0,f1] = np.inf
                     else:
@@ -478,8 +512,8 @@ class Surface():
             self.border_intersection = False
 
         self.surfaceV +=  self.__Vertices(self.slices[n+1].points)
-        self.surfaceE += self.__CloseSurface(self.slices.shape[0]-1, total_shift)
-        self.surfaceE += self.__CloseSurface(0) ##intial slice closure
+        #self.surfaceE += self.__CloseSurface(self.slices.shape[0]-1, total_shift)
+        #self.surfaceE += self.__CloseSurface(0) ##intial slice closure
         self.out_surface = True
     def super_resolution(self):
         self.super_surface

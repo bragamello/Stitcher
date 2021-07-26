@@ -21,26 +21,42 @@ OutputDir = Data["OutputDir"]
 DisplayConsoleStats = Data["DisplayConsoleStats"]
 MeshObjOutput = Data["MeshObjOutput"]
 
-S = rct.Surface()
+
 print("Loading files\n\n")
 print(FileDir)
 
+def island_init(file_dir,f,subdivision=3):
+    arq = roiread(file_dir+"/"+f)
+    I = rct.Perimeter(arq)
+    I.remove_overlap()
+    I.remove_overlap()
+    I.fix_intersection()
+    I.fix_distance(subdivision=3)
+    I.c_clockwise()
+    return I
+
 for block in Data["Stitches3D"]:
     for section in block:
+        S = rct.Surface()
         for file in block[section]:
-            print(file)
-            arq = roiread(FileDir+"/"+file)
-            I = rct.Perimeter(arq)
-            I.remove_overlap()
-            I.remove_overlap()
-            I.fix_intersection()
-            I.fix_distance()
-            I.c_clockwise()
-            S.add_island(I)
+            try:
+                if isinstance(file,list):
+                    I = 0
+                    for f in file:
+                        I_s = island_init(FileDir,f,3)
+                        if I == 0:
+                            I = I_s
+                        else:
+                            I.islands_ensemble(I_s)
+                else:
+                    I = island_init(FileDir,file,3)
+                S.add_island(I)
+            except Exception:
+                print("Failed to load"+file)
 
-print("\nBuilding surface")
-S.build_surface()
+        print("\nBuilding surface: ",section)
+        S.build_surface()
 
-with open("inter_RH_PIAL_o.obj", "w") as out_file:
-    out_file.write(S.surfaceV)
-    out_file.write(S.surfaceE)
+        with open("Kamilla_interna_teste2628_"+section+".obj", "w") as out_file:
+            out_file.write(S.surfaceV)
+            out_file.write(S.surfaceE)
