@@ -130,6 +130,7 @@ dmypy.json
 
 # json data and results
 *.json
+*.obj
 json/
 mesh/
 

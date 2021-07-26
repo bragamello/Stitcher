@@ -28,8 +28,8 @@ Reconstruction of 3D Surfaces
   And one should also provide a file containing the order in which the islands should be connected, as the program can not yet decide it in a parsimonious way. This file should be structured as follows:
 
               {"Stitches3D": [
-              {"upper": ["one.json"], "lower": ["two.json"]},
-              {"upper": ["two.json", "three.json", "four.json"], "lower": ["five.json", "six.json"]},
+              {"1":["f1.json","f2.json"],
+                "2":[["f3.json","f4i2.json"],"f5.json"]}
               ],
               "FileDir": "/path/to/conturs/json",
               "OutputDir": "/path/to/out/put/mesh",
