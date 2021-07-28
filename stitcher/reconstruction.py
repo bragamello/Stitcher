@@ -137,45 +137,28 @@ class Perimeter():
                     aux = np.delete(aux,j)
                     #self.points[j] += eta*(self.points[j]-self.points[j-1])
         self.points = aux
-    def c_clockwise(self):
+    def c_clockwise(self, force_flip=False):
         ## Reorients surface to counter-clockwise
         ##and creates a area vector
-        self.area = Point(0,0,0)
+        angle = 0
+        if self.area.mod()==0:
+            self.area = Point(0,0,0)
+            for n in range(self.points.shape[0]-2):
+                v1 = self.points[n]-self.points[n+1]
+                v2 = self.points[n+1]-self.points[n+2]
+                self.area += v1**v2
+                dot = v1.dot(v2)
+                degree = dot/(v1.mod()*v2.mod())
+                angle += np.arccos(2*np.pi*degree/360)
+            self.area = (1/self.area.mod())*self.area
 
-        for n in range(self.points.shape[0]-2):
-            self.area += (self.points[n]-self.points[n+1])**(self.points[n+1]-self.points[n+2])
-        self.area = (1/self.area.mod())*self.area
-        '''
-            TOO LONG TO BE IN THE CODE??
-            We are choosing 4 octants to be considered cclockwise and
-        4 others to be clockwise. Also, the there must be a one to one
-        correspondence between a cclockwise octant and a clockwise
-        octant.
-            One simple (arbitrary) way of doing this is choosing y>0
-        sub-region to be the cclockwise/clockwise space, and y<0 the
-        clockwise/cclockwise.
-            One thing that we note is that the plane y=0 is undifined
-        with that coice, so lets add a new restriction. If y is not
-        sufficient to  determine the orientation (i.e., y=0), then we
-        go back to the more usual 2D orientation. If we simply apply
-        x>0 (or z>0) criteria to define cclockwise/clockwise orientation,
-        we've exhausted all possibilities of orientation.
-        '''
-        if self.area.x > -1e-13 and self.area.x < 1e-13:
-            self.area.x = 0
-        if self.area.y > -1e-13 and self.area.y < 1e-13:
-            self.area.y = 0
-        if self.area.z > -1e-13 and self.area.z < 1e-13:
-            self.area.z = 0
-
-        if self.area.y < 0:
+        if force_flip:
             self.points = np.flip(self.points,0)
             self.area = -1*self.area
             return
-        if self.area.y == 0:
-            if self.area.x < 0:
-                self.points = np.flip(self.points,0)
-                self.area = -1*self.area
+        if angle<0:
+            self.points = np.flip(self.points,0)
+            self.area = -1*self.area
     def geometric_center(self) -> Point:
         x = 0
         y = 0
@@ -426,20 +409,45 @@ class Surface():
             infinity.
             '''
             bad_connect = []
+            rerun = False
+            check = False
+            limit = 1
 
-            while not self.border_intersection: ##After finding a path with o intersections
+            while not self.border_intersection:
+                if len(bad_connect) >= limit:
+                    if check:
+                        skip_intersection = True
+                        print("Skiping intersection check")
+                    else:
+                        if not rerun:
+                            self.slices[n+1].c_clockwise(True)
+                            dist_matrix =  self.__CostMatrix(self.slices[n],self.slices[n+1])
+                            bad_connect = []
+                            rerun = True
+                            limit = 10
+                        else:
+                            limit = 20
+                            check = True
+                            self.slices[n+1].c_clockwise(True)
+                            dist_matrix =  self.__CostMatrix(self.slices[n],self.slices[n+1])
+                            bad_connect = []
+
+
+                else:
+                    skip_intersection = False
+
+                ##After finding a path with o intersections
                 ## finding all min values contained inthe matrix
                 ##there's usually only one, but the value might
                 ##be repeated somewhere
                 closest_point_dist = np.amin(dist_matrix)
                 allMin = np.where(dist_matrix == closest_point_dist)
                 list_cordinates = list(zip(allMin[0], allMin[1]))
-
                 final_min_cord = list_cordinates[0]
                 f0 = final_min_cord[0]
                 f1 = final_min_cord[1]
-                #if len(bad_connect) > 0:
-                    #print(bad_connect,f0,f1)
+
+
                 ## Re-order the points: put the first connection at (0,0)
                 reordered_upper =  self.__Reordering(
                     self.slices[n],
@@ -449,8 +457,6 @@ class Surface():
                     final_min_cord[1])
 
                 cost_matrix =  self.__CostMatrix(reordered_upper,reordered_lower)
-                #print("\n dist_m:",dist_matrix.shape,"\n cost_m:",cost_matrix.shape)
-                #print("\n n shape:",self.slices[n].points.shape,"\n n+1:",self.slices[n+1].points.shape)
                 for bad in bad_connect:
                     if bad[0]>=f0:
                         bad1 = bad[0]-f0
@@ -467,24 +473,20 @@ class Surface():
                     self.slices[n].points.shape[0],
                     self.slices[n+1].points.shape[0],
                     reordered_upper,
-                    reordered_lower)
+                    reordered_lower,
+                    skip_intersection)
 
                 ##fixing relative order to absolute/initial order
                 if not isinstance(wrong, int):
                     if wrong[0]+f0 <= self.slices[n].points.shape[0]-2:
                         wrong[0] += f0
-                        #print('1')
                     else:
                         wrong[0] += f0-self.slices[n].points.shape[0]-2
-                        #print('2',wrong[0])
 
                     if wrong[1]+f1 <= self.slices[n+1].points.shape[0]-2:
                         wrong[1] += f1
-                        #print('3')
                     else:
                         wrong[1] += f1-self.slices[n+1].points.shape[0]-2
-                        #print('4',wrong[1])
-                    #print("..")
                     if [wrong[0],wrong[1]] in bad_connect:
                         dist_matrix[f0,f1] = np.inf
                     else:
@@ -495,6 +497,7 @@ class Surface():
             ## The path is calculated based on the reordered points,
             ##so we should invert the transformation so that we have
             ##the path for the original set of points
+
             the_path =  self.__FixPathOrder(
                 the_path,
                 final_min_cord,
@@ -543,7 +546,7 @@ class Surface():
                         point to the next one. For example, consider the case:
                             1) from p_k going to p_k+1 we make a turn of 60o
                             2) from p_k to p_j (creating a diagonal) we make a
-                            turn of 45 deegrees, then we are inside the polygon
+                            turn of 45 degrees, then we are inside the polygon
                         If we are inside the polygon, then we need to check if
                         the diagonal intersects any order line segment in the
                         perimeter. If that is not the case, then we may say that
@@ -698,8 +701,8 @@ class Surface():
                 cost_matrix[m,n] = (reordered_upper.points[m] - reordered_lower.points[n]).mod()
 
         return cost_matrix
-    def __FindPath(self, final_matrix, M, N, reordered_upper, reordered_lower):
-        def surface_intersection(the_path, path_limit, next, upper, reordered_upper, reordered_lower) -> bool:
+    def __FindPath(self, final_matrix, M, N, reordered_upper, reordered_lower, skip_intersection = False):
+        def surface_intersection(the_path, path_limit, next, upper, reordered_upper, reordered_lower, skip_intersection = False) -> bool:
             def line_triangle_intersection(q1, q2, p1, p2, p3):
                 ## stackoverflow.com/questions/42740765/intersection-between-line-and-triangle-in-3d
                 def volume(a, b, c, d):
@@ -718,6 +721,8 @@ class Surface():
                         return True
                 return False
             if path_limit < 3:
+                return [-1,-1], False
+            if skip_intersection:
                 return [-1,-1], False
 
             ## if speed is needed in the future
@@ -791,14 +796,16 @@ class Surface():
                                 [m-1,n],
                                 False,
                                 reordered_upper,
-                                reordered_lower)
+                                reordered_lower,
+                                skip_intersection)
                     if check[1]:
                         check2 = surface_intersection(the_path,
                                     index,
                                     [m,n-1],
                                     True,
                                     reordered_upper,
-                                    reordered_lower)
+                                    reordered_lower,
+                                    skip_intersection)
                         if check2[1]:
                             ##[m,n] -> Bad point that always create intersection
                             return 0,0,[m,n]
@@ -816,14 +823,16 @@ class Surface():
                                 [m,n-1],
                                 True,
                                 reordered_upper,
-                                reordered_lower)
+                                reordered_lower,
+                                skip_intersection)
                     if check[1]:
                         check2 = surface_intersection(the_path,
                                     index,
                                     [m-1,n],
                                     False,
                                     reordered_upper,
-                                    reordered_lower)
+                                    reordered_lower,
+                                    skip_intersection)
                         if check2[1]:
                             return 0,0,[m,n]
                         else:
@@ -842,7 +851,8 @@ class Surface():
                                 [m,n-1],
                                 True,
                                 reordered_upper,
-                                reordered_lower)
+                                reordered_lower,
+                                skip_intersection)
                     if check[1]:
                         return 0,0,[m,n]
                     n = n - 1
@@ -852,7 +862,8 @@ class Surface():
                                 [m-1,n],
                                 False,
                                 reordered_upper,
-                                reordered_lower)
+                                reordered_lower,
+                                skip_intersection)
                     if check[1]:
                         return 0,0,[m,n]
                     m = m - 1
