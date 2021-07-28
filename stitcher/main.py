@@ -48,15 +48,16 @@ for block in Data["Stitches3D"]:
                             I = I_s
                         else:
                             I.islands_ensemble(I_s)
+                    I.fix_intersection()
                 else:
                     I = island_init(FileDir,file,3)
                 S.add_island(I)
             except Exception:
-                print("Failed to load"+file)
+                print("Failed to load "+file)
 
         print("\nBuilding surface: ",section)
         S.build_surface()
 
-        with open("Kamilla_interna_teste2628_"+section+".obj", "w") as out_file:
+        with open("Kamilla_interna_"+section+".obj", "w") as out_file:
             out_file.write(S.surfaceV)
             out_file.write(S.surfaceE)
